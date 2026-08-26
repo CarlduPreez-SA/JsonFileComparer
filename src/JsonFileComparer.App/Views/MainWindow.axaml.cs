@@ -39,6 +39,29 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void OnApplyMergeClick(object? sender, RoutedEventArgs e)
+    {
+        var targetFile = ViewModel.MergeTargetFileName;
+        var confirmed = await ConfirmDialog.ShowAsync(
+            this,
+            $"This will overwrite \"{targetFile}\" with your selected values. " +
+            "A timestamped backup of the current file will be saved alongside it first. Continue?");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            ViewModel.ApplyMerge();
+        }
+        catch (Exception ex)
+        {
+            await ConfirmDialog.ShowAsync(this, $"Merge failed: {ex.Message}", confirmText: "OK");
+        }
+    }
+
     private async void OnExportJsonClick(object? sender, RoutedEventArgs e)
     {
         var path = await PickSaveFileAsync("Export JSON report", "diff-report.json",

@@ -47,14 +47,26 @@
             <Button Content="Compare" Command="{Binding CompareCommand}" FontWeight="Bold" />
         </WrapPanel>
 
+        <!-- Merge -->
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <TextBlock Text="Overwrite:" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <RadioButton GroupName="MergeTarget" Content="Left file" Margin="0,0,12,0"
+                         IsChecked="{Binding IsMergeTargetLeft}" />
+            <RadioButton GroupName="MergeTarget" Content="Right file" Margin="0,0,16,0"
+                         IsChecked="{Binding IsMergeTargetRight}" />
+            <TextBlock Text="Use the Keep Left / Keep Right choice on each row below to decide what gets written, then Apply Merge."
+                       VerticalAlignment="Center" Opacity="0.7" FontStyle="Italic" />
+        </WrapPanel>
+
         <!-- Status / summary / export -->
-        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,8,0,0">
+        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,8,0,0">
             <StackPanel Grid.Column="0">
                 <TextBlock Text="{Binding StatusMessage}" />
                 <TextBlock Text="{Binding SummaryText}" FontWeight="Bold" />
             </StackPanel>
-            <Button Grid.Column="1" Content="Export JSON..." Margin="0,0,8,0" Click="OnExportJsonClick" IsEnabled="{Binding HasResult}" />
-            <Button Grid.Column="2" Content="Export HTML..." Click="OnExportHtmlClick" IsEnabled="{Binding HasResult}" />
+            <Button Grid.Column="1" Content="Apply Merge..." Margin="0,0,8,0" Click="OnApplyMergeClick" IsEnabled="{Binding HasResult}" />
+            <Button Grid.Column="2" Content="Export JSON..." Margin="0,0,8,0" Click="OnExportJsonClick" IsEnabled="{Binding HasResult}" />
+            <Button Grid.Column="3" Content="Export HTML..." Click="OnExportHtmlClick" IsEnabled="{Binding HasResult}" />
         </Grid>
 
         <!-- Diff grid -->
@@ -77,6 +89,16 @@
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Left value" Binding="{Binding LeftValue}" Width="2.5*" />
                 <DataGridTextColumn Header="Right value" Binding="{Binding RightValue}" Width="2.5*" />
+                <DataGridTemplateColumn Header="Keep" Width="1.3*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:DiffRowViewModel">
+                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <RadioButton GroupName="{Binding Path}" Content="Left" IsChecked="{Binding IsLeftSelected}" />
+                                <RadioButton GroupName="{Binding Path}" Content="Right" IsChecked="{Binding IsRightSelected}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
 

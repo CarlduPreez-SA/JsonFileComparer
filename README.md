@@ -15,6 +15,7 @@ A .NET 10 desktop application for accurately comparing two config files side by 
   - Treat JSON `null` the same as a missing property
   - Optionally include unchanged values in the output
 - **Side-by-side desktop UI** built with [Avalonia](https://avaloniaui.net/), showing every difference in a sortable, color-coded grid.
+- **Selective merge** — per difference, choose whether the left or right value should win, then apply your selections directly to one of the two files. A timestamped backup of the overwritten file is created automatically before every merge.
 - **Exportable reports** — save the diff as a machine-readable JSON report or a self-contained, shareable HTML report.
 
 ## Project structure
@@ -65,6 +66,15 @@ dotnet test
    - **Numeric tolerance** — allowed absolute difference between two numbers before they're reported as changed
 3. Click **Compare**. Differences appear in the grid, color-coded by type, with the JSON path, and both the left and right values.
 4. Use **Export JSON...** or **Export HTML...** to save the report to disk.
+
+### Merging selected values across files
+
+1. Choose which file to **Overwrite** — Left or Right. Every row defaults to keeping that file's own current value (i.e. nothing changes until you say so).
+2. On any row you want to change, flip its **Keep** toggle to the other side. This works the same way for changed values, values only present on one side (added/removed), and array elements matched by key.
+3. Click **Apply Merge...** and confirm. The target file is overwritten with your selections applied on top of its own content; everything else is left untouched.
+4. A backup of the target file (`<filename>.bak-<timestamp>`) is written alongside it before every merge, so a merge is always reversible.
+
+If the target file is XML, the merged result is written back out as valid XML (see below) — never as JSON — and vice versa.
 
 ## How comparison paths work
 
