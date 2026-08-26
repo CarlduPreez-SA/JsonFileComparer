@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:JsonFileComparer.App.ViewModels"
         xmlns:conv="using:JsonFileComparer.App.Converters"
+        xmlns:ae="using:AvaloniaEdit"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
@@ -44,7 +45,7 @@
             <TextBlock Text="Numeric tolerance:" VerticalAlignment="Center" Margin="0,0,6,0" />
             <NumericUpDown Value="{Binding NumericTolerance}" Increment="0.001" Minimum="0" Width="120" Margin="0,0,16,0" />
 
-            <Button Content="Compare" Command="{Binding CompareCommand}" FontWeight="Bold" />
+            <Button Content="Compare" Click="OnCompareClick" FontWeight="Bold" />
         </WrapPanel>
 
         <!-- Merge -->
@@ -56,6 +57,17 @@
                          IsChecked="{Binding IsMergeTargetRight}" />
             <TextBlock Text="Use the Keep Left / Keep Right choice on each row below to decide what gets written, then Apply Merge."
                        VerticalAlignment="Center" Opacity="0.7" FontStyle="Italic" />
+        </WrapPanel>
+
+        <!-- View mode -->
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <TextBlock Text="View:" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <RadioButton GroupName="ViewMode" Content="Grid" Margin="0,0,12,0" IsChecked="{Binding IsGridView}" />
+            <RadioButton GroupName="ViewMode" Content="Text" Margin="0,0,16,0" IsChecked="{Binding IsTextView}" />
+
+            <Button Content="Save Left" Margin="0,0,8,0" Click="OnSaveLeftTextClick" IsVisible="{Binding IsTextView}" IsEnabled="{Binding HasResult}" />
+            <Button Content="Save Right" Margin="0,0,8,0" Click="OnSaveRightTextClick" IsVisible="{Binding IsTextView}" IsEnabled="{Binding HasResult}" />
+            <Button Content="Refresh Diff" Click="OnRefreshTextDiffClick" IsVisible="{Binding IsTextView}" IsEnabled="{Binding HasResult}" />
         </WrapPanel>
 
         <!-- Status / summary / export -->
@@ -70,7 +82,8 @@
         </Grid>
 
         <!-- Diff grid -->
-        <DataGrid ItemsSource="{Binding DiffRows}"
+        <DataGrid IsVisible="{Binding IsGridView}"
+                  ItemsSource="{Binding DiffRows}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   GridLinesVisibility="All"
@@ -101,6 +114,18 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
+
+        <!-- Text view -->
+        <Grid IsVisible="{Binding IsTextView}" ColumnDefinitions="*,*">
+            <DockPanel Grid.Column="0" Margin="0,0,4,0">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LeftLabel}" FontWeight="Bold" Margin="0,0,0,4" />
+                <ae:TextEditor Name="LeftEditor" ShowLineNumbers="True" FontFamily="Consolas,Cascadia Mono,monospace" />
+            </DockPanel>
+            <DockPanel Grid.Column="1" Margin="4,0,0,0">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding RightLabel}" FontWeight="Bold" Margin="0,0,0,4" />
+                <ae:TextEditor Name="RightEditor" ShowLineNumbers="True" FontFamily="Consolas,Cascadia Mono,monospace" />
+            </DockPanel>
+        </Grid>
 
     </DockPanel>
 

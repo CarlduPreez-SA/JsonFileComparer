@@ -15,6 +15,7 @@ A .NET 10 desktop application for accurately comparing two config files side by 
   - Treat JSON `null` the same as a missing property
   - Optionally include unchanged values in the output
 - **Side-by-side desktop UI** built with [Avalonia](https://avaloniaui.net/), showing every difference in a sortable, color-coded grid.
+- **Text view** — switch to a Notepad-style side-by-side view of the raw file text, with changed/added/removed lines highlighted. Both panes are fully editable; edits can be saved straight back to the file (with a backup, same as merge).
 - **Selective merge** — per difference, choose whether the left or right value should win, then apply your selections directly to one of the two files. A timestamped backup of the overwritten file is created automatically before every merge.
 - **Exportable reports** — save the diff as a machine-readable JSON report or a self-contained, shareable HTML report.
 
@@ -23,10 +24,10 @@ A .NET 10 desktop application for accurately comparing two config files side by 
 ```
 JsonFileComparer/
 ├── src/
-│   ├── JsonFileComparer.Core/    Comparison engine, options, and report writers (no UI dependencies)
+│   ├── JsonFileComparer.Core/    Comparison engine, merge engine, text-line diff, options, and report writers (no UI dependencies)
 │   └── JsonFileComparer.App/     Avalonia MVVM desktop application
 └── tests/
-    └── JsonFileComparer.Core.Tests/   xUnit tests for the comparison engine and report writers
+    └── JsonFileComparer.Core.Tests/   xUnit tests for the comparison, merge, and text-diff engines, and report writers
 ```
 
 The comparison logic lives entirely in `JsonFileComparer.Core`, a plain class library with no UI dependencies — it can be reused from a CLI, a web API, or any other host. XML files are normalized into the same JSON tree shape before comparison (see [How XML is compared](#how-xml-is-compared) below), so the exact same diff engine and options apply to both formats.
@@ -75,6 +76,18 @@ dotnet test
 4. A backup of the target file (`<filename>.bak-<timestamp>`) is written alongside it before every merge, so a merge is always reversible.
 
 If the target file is XML, the merged result is written back out as valid XML (see below) — never as JSON — and vice versa.
+
+### Text view
+
+Switch **View** to **Text** to see both files as plain text, side by side, with line numbers — like Notepad, but with differences highlighted:
+
+- **Yellow** — the line changed between files
+- **Green** — the line only exists on the right
+- **Red** — the line only exists on the left
+
+This is a separate, purely line-based diff (the same family of algorithm behind `diff`/`git diff`) — independent of the structural JSON/XML comparison used by the grid and merge views, so it reflects the files' literal text, not their parsed structure.
+
+Both panes are editable. **Refresh Diff** recomputes the highlighting from your current edits without touching disk. **Save Left** / **Save Right** writes a pane's current text back to its file (with a confirmation and an automatic backup, same as merge), then re-runs the comparison so the grid, summary, and both views all stay in sync.
 
 ## How comparison paths work
 

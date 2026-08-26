@@ -14,12 +14,90 @@ public partial class MainWindow : Window
         Patterns = ["*.json", "*.xml", "*.config"]
     };
 
+    private readonly LineHighlightRenderer _leftHighlighter = new();
+    private readonly LineHighlightRenderer _rightHighlighter = new();
+
     public MainWindow()
     {
         InitializeComponent();
+        LeftEditor.TextArea.TextView.BackgroundRenderers.Add(_leftHighlighter);
+        RightEditor.TextArea.TextView.BackgroundRenderers.Add(_rightHighlighter);
     }
 
     private MainViewModel ViewModel => (MainViewModel)DataContext!;
+
+    private void OnCompareClick(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.CompareCommand.Execute(null);
+        RefreshTextPanes();
+    }
+
+    private void RefreshTextPanes()
+    {
+        LeftEditor.Text = ViewModel.GetLeftRawText();
+        RightEditor.Text = ViewModel.GetRightRawText();
+        ApplyLineHighlights(ViewModel.ComputeLineDiff());
+    }
+
+    private void ApplyLineHighlights(Core.TextDiff.LineDiffResult diff)
+    {
+        _leftHighlighter.SetHighlights(diff.LeftLines);
+        _rightHighlighter.SetHighlights(diff.RightLines);
+        LeftEditor.TextArea.TextView.InvalidateVisual();
+        RightEditor.TextArea.TextView.InvalidateVisual();
+    }
+
+    private void OnRefreshTextDiffClick(object? sender, RoutedEventArgs e)
+    {
+        var diff = ViewModel.RefreshLineDiff(LeftEditor.Text, RightEditor.Text);
+        ApplyLineHighlights(diff);
+    }
+
+    private async void OnSaveLeftTextClick(object? sender, RoutedEventArgs e)
+    {
+        var confirmed = await ConfirmDialog.ShowAsync(
+            this,
+            $"This will overwrite \"{System.IO.Path.GetFileName(ViewModel.LeftFilePath)}\" with the text shown in this pane. " +
+            "A timestamped backup will be saved alongside it first. Continue?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            ViewModel.SaveLeftText(LeftEditor.Text);
+            ViewModel.CompareCommand.Execute(null);
+            RefreshTextPanes();
+        }
+        catch (Exception ex)
+        {
+            await ConfirmDialog.ShowAsync(this, $"Save failed: {ex.Message}", confirmText: "OK");
+        }
+    }
+
+    private async void OnSaveRightTextClick(object? sender, RoutedEventArgs e)
+    {
+        var confirmed = await ConfirmDialog.ShowAsync(
+            this,
+            $"This will overwrite \"{System.IO.Path.GetFileName(ViewModel.RightFilePath)}\" with the text shown in this pane. " +
+            "A timestamped backup will be saved alongside it first. Continue?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            ViewModel.SaveRightText(RightEditor.Text);
+            ViewModel.CompareCommand.Execute(null);
+            RefreshTextPanes();
+        }
+        catch (Exception ex)
+        {
+            await ConfirmDialog.ShowAsync(this, $"Save failed: {ex.Message}", confirmText: "OK");
+        }
+    }
 
     private async void OnBrowseLeftClick(object? sender, RoutedEventArgs e)
     {

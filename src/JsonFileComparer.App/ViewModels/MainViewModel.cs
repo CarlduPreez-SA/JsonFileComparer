@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using JsonFileComparer.Core;
 using JsonFileComparer.Core.Models;
 using JsonFileComparer.Core.Reporting;
+using JsonFileComparer.Core.TextDiff;
 
 namespace JsonFileComparer.App.ViewModels;
 
@@ -37,6 +38,9 @@ public partial class MainViewModel : ViewModelBase
     public partial MergeSide MergeTargetSide { get; set; } = MergeSide.Left;
 
     [ObservableProperty]
+    public partial ViewMode CurrentViewMode { get; set; } = ViewMode.Grid;
+
+    [ObservableProperty]
     public partial string StatusMessage { get; set; } = "Choose two config files (JSON or XML) and click Compare.";
 
     [ObservableProperty]
@@ -57,11 +61,14 @@ public partial class MainViewModel : ViewModelBase
     private ConfigFileFormat _leftFormat;
     private ConfigFileFormat _rightFormat;
     private JsonCompareOptions? _lastOptions;
-    private string _leftLabel = "Left";
-    private string _rightLabel = "Right";
+    private string _leftRawText = string.Empty;
+    private string _rightRawText = string.Empty;
 
-    public string LeftLabel => _leftLabel;
-    public string RightLabel => _rightLabel;
+    [ObservableProperty]
+    public partial string LeftLabel { get; set; } = "Left";
+
+    [ObservableProperty]
+    public partial string RightLabel { get; set; } = "Right";
 
     public string MergeTargetFilePath => MergeTargetSide == MergeSide.Left ? LeftFilePath : RightFilePath;
 
@@ -85,6 +92,24 @@ public partial class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsMergeTargetRight));
         OnPropertyChanged(nameof(MergeTargetFilePath));
         OnPropertyChanged(nameof(MergeTargetFileName));
+    }
+
+    public bool IsGridView
+    {
+        get => CurrentViewMode == ViewMode.Grid;
+        set { if (value) CurrentViewMode = ViewMode.Grid; }
+    }
+
+    public bool IsTextView
+    {
+        get => CurrentViewMode == ViewMode.Text;
+        set { if (value) CurrentViewMode = ViewMode.Text; }
+    }
+
+    partial void OnCurrentViewModeChanged(ViewMode value)
+    {
+        OnPropertyChanged(nameof(IsGridView));
+        OnPropertyChanged(nameof(IsTextView));
     }
 
     [RelayCommand]
@@ -119,8 +144,10 @@ public partial class MainViewModel : ViewModelBase
             var comparer = new JsonComparer(options);
             var result = comparer.Compare(leftFile.Document, rightFile.Document);
             _lastResult = result;
-            _leftLabel = $"{Path.GetFileName(LeftFilePath)} ({leftFile.Format})";
-            _rightLabel = $"{Path.GetFileName(RightFilePath)} ({rightFile.Format})";
+            LeftLabel = $"{Path.GetFileName(LeftFilePath)} ({leftFile.Format})";
+            RightLabel = $"{Path.GetFileName(RightFilePath)} ({rightFile.Format})";
+            _leftRawText = File.ReadAllText(LeftFilePath);
+            _rightRawText = File.ReadAllText(RightFilePath);
 
             foreach (var entry in result.Entries)
             {
@@ -136,7 +163,7 @@ public partial class MainViewModel : ViewModelBase
                 ? "The files are equivalent."
                 : $"Added: {result.AddedCount}   Removed: {result.RemovedCount}   Changed: {result.ChangedCount}   Unchanged: {result.UnchangedCount}";
 
-            StatusMessage = $"Compared {_leftLabel} against {_rightLabel}.";
+            StatusMessage = $"Compared {LeftLabel} against {RightLabel}.";
             HasResult = true;
 
             // Keep the parsed documents (and the options used to pair them) alive so Apply Merge can use the
@@ -181,6 +208,41 @@ public partial class MainViewModel : ViewModelBase
         StatusMessage = $"Applied merge to {Path.GetFileName(targetPath)}. Backup saved as {Path.GetFileName(backupPath)}.";
     }
 
+    public string GetLeftRawText() => _leftRawText;
+
+    public string GetRightRawText() => _rightRawText;
+
+    public LineDiffResult ComputeLineDiff() => LineDiffer.Compute(_leftRawText, _rightRawText);
+
+    /// <summary>Recomputes the line diff from the given (possibly edited, not-yet-saved) pane text, without touching disk.</summary>
+    public LineDiffResult RefreshLineDiff(string leftText, string rightText)
+    {
+        _leftRawText = leftText;
+        _rightRawText = rightText;
+        return LineDiffer.Compute(_leftRawText, _rightRawText);
+    }
+
+    public void SaveLeftText(string text)
+    {
+        SaveText(LeftFilePath, text);
+        _leftRawText = text;
+        StatusMessage = $"Saved {Path.GetFileName(LeftFilePath)}.";
+    }
+
+    public void SaveRightText(string text)
+    {
+        SaveText(RightFilePath, text);
+        _rightRawText = text;
+        StatusMessage = $"Saved {Path.GetFileName(RightFilePath)}.";
+    }
+
+    private static void SaveText(string path, string text)
+    {
+        var backupPath = $"{path}.bak-{DateTime.Now:yyyyMMddHHmmss}";
+        File.Copy(path, backupPath, overwrite: false);
+        File.WriteAllText(path, text);
+    }
+
     public void ExportJson(string path)
     {
         if (_lastResult is null) return;
@@ -191,7 +253,7 @@ public partial class MainViewModel : ViewModelBase
     public void ExportHtml(string path)
     {
         if (_lastResult is null) return;
-        HtmlReportWriter.WriteToFile(_lastResult, _leftLabel, _rightLabel, path);
+        HtmlReportWriter.WriteToFile(_lastResult, LeftLabel, RightLabel, path);
         StatusMessage = $"HTML report saved to {path}";
     }
 }
