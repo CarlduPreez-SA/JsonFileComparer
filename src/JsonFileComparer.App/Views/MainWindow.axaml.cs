@@ -9,9 +9,9 @@ namespace JsonFileComparer.App.Views;
 
 public partial class MainWindow : Window
 {
-    private static readonly FilePickerFileType JsonFileType = new("JSON files")
+    private static readonly FilePickerFileType ConfigFileType = new("Config files (JSON/XML)")
     {
-        Patterns = ["*.json"]
+        Patterns = ["*.json", "*.xml", "*.config"]
     };
 
     public MainWindow()
@@ -23,7 +23,7 @@ public partial class MainWindow : Window
 
     private async void OnBrowseLeftClick(object? sender, RoutedEventArgs e)
     {
-        var path = await PickOpenFileAsync("Select left JSON file");
+        var path = await PickOpenFileAsync("Select left config file");
         if (path is not null)
         {
             ViewModel.LeftFilePath = path;
@@ -32,7 +32,7 @@ public partial class MainWindow : Window
 
     private async void OnBrowseRightClick(object? sender, RoutedEventArgs e)
     {
-        var path = await PickOpenFileAsync("Select right JSON file");
+        var path = await PickOpenFileAsync("Select right config file");
         if (path is not null)
         {
             ViewModel.RightFilePath = path;
@@ -65,7 +65,7 @@ public partial class MainWindow : Window
         {
             Title = title,
             AllowMultiple = false,
-            FileTypeFilter = new List<FilePickerFileType> { JsonFileType, FilePickerFileTypes.All }
+            FileTypeFilter = new List<FilePickerFileType> { ConfigFileType, FilePickerFileTypes.All }
         });
 
         return files.Count > 0 ? files[0].TryGetLocalPath() : null;

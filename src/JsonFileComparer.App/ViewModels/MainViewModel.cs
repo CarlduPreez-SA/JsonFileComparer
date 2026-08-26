@@ -33,7 +33,7 @@ public partial class MainViewModel : ViewModelBase
     public partial double NumericTolerance { get; set; }
 
     [ObservableProperty]
-    public partial string StatusMessage { get; set; } = "Choose two JSON files and click Compare.";
+    public partial string StatusMessage { get; set; } = "Choose two config files (JSON or XML) and click Compare.";
 
     [ObservableProperty]
     public partial string SummaryText { get; set; } = string.Empty;
@@ -61,14 +61,14 @@ public partial class MainViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(LeftFilePath) || string.IsNullOrWhiteSpace(RightFilePath))
         {
-            StatusMessage = "Please select both a left and a right JSON file.";
+            StatusMessage = "Please select both a left and a right config file.";
             return;
         }
 
         try
         {
-            using var leftDoc = JsonFileLoader.Load(LeftFilePath);
-            using var rightDoc = JsonFileLoader.Load(RightFilePath);
+            using var leftFile = ConfigFileLoader.Load(LeftFilePath);
+            using var rightFile = ConfigFileLoader.Load(RightFilePath);
 
             var options = new JsonCompareOptions
             {
@@ -80,10 +80,10 @@ public partial class MainViewModel : ViewModelBase
             };
 
             var comparer = new JsonComparer(options);
-            var result = comparer.Compare(leftDoc, rightDoc);
+            var result = comparer.Compare(leftFile.Document, rightFile.Document);
             _lastResult = result;
-            _leftLabel = Path.GetFileName(LeftFilePath);
-            _rightLabel = Path.GetFileName(RightFilePath);
+            _leftLabel = $"{Path.GetFileName(LeftFilePath)} ({leftFile.Format})";
+            _rightLabel = $"{Path.GetFileName(RightFilePath)} ({rightFile.Format})";
 
             foreach (var entry in result.Entries)
             {
@@ -102,7 +102,7 @@ public partial class MainViewModel : ViewModelBase
             StatusMessage = $"Compared {_leftLabel} against {_rightLabel}.";
             HasResult = true;
         }
-        catch (JsonFileLoadException ex)
+        catch (ConfigFileLoadException ex)
         {
             StatusMessage = ex.Message;
         }

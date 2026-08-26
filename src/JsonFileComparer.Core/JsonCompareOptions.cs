@@ -12,7 +12,7 @@ public sealed class JsonCompareOptions
     /// (used by <see cref="ArrayComparisonMode.Key"/> and <see cref="ArrayComparisonMode.Auto"/>).
     /// </summary>
     public IReadOnlyList<string> ArrayKeyFieldNames { get; init; } =
-        ["id", "Id", "ID", "key", "Key", "name", "Name"];
+        ["id", "Id", "ID", "key", "Key", "name", "Name", "@key", "@Key", "@name", "@Name", "@id", "@Id", "@ID"];
 
     /// <summary>Whether object property name matching is case-sensitive.</summary>
     public bool CaseSensitivePropertyNames { get; init; } = true;

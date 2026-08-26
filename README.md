@@ -1,13 +1,14 @@
 # JsonFileComparer
 
-A .NET 10 desktop application for accurately comparing two JSON files side by side — see exactly what values changed, what was added, and what's missing.
+A .NET 10 desktop application for accurately comparing two config files side by side — see exactly what values changed, what was added, and what's missing. Supports both **JSON** (`appsettings.json`) and **XML** (`web.config`, `applicationHost.config`) files, making it well suited to comparing IIS application configs across environments.
 
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
 
 ## Features
 
-- **Accurate structural diffing** — recursively compares two JSON documents and classifies every difference as **Added**, **Removed**, **Changed**, or **Type changed** (e.g. a number became a string).
-- **Smart array comparison** — arrays of objects are matched by an identifying key (`id`, `name`, etc.) when one is reliably present on both sides, so reordering or inserting an element doesn't produce a wall of false differences. Falls back to strict positional (index) comparison otherwise. The mode can be forced either way.
+- **JSON and XML support** — compare `appsettings.json` files, `web.config` files, or any mix of the two. The file format is auto-detected from the extension (`.json`, `.xml`, `.config`) or, failing that, by sniffing the content.
+- **Accurate structural diffing** — recursively compares two documents and classifies every difference as **Added**, **Removed**, **Changed**, or **Type changed** (e.g. a number became a string).
+- **Smart array comparison** — arrays of objects (or, in XML, repeated sibling elements like `<add key="..." value="..."/>`) are matched by an identifying key (`id`, `name`, `key`, or their XML attribute equivalents) when one is reliably present on both sides, so reordering or inserting an element doesn't produce a wall of false differences. Falls back to strict positional (index) comparison otherwise. The mode can be forced either way.
 - **Configurable comparison rules**:
   - Case-sensitive or case-insensitive property name matching
   - Numeric tolerance (treat `1.000` and `1.0001` as equal)
@@ -27,7 +28,7 @@ JsonFileComparer/
     └── JsonFileComparer.Core.Tests/   xUnit tests for the comparison engine and report writers
 ```
 
-The comparison logic lives entirely in `JsonFileComparer.Core`, a plain class library with no UI dependencies — it can be reused from a CLI, a web API, or any other host.
+The comparison logic lives entirely in `JsonFileComparer.Core`, a plain class library with no UI dependencies — it can be reused from a CLI, a web API, or any other host. XML files are normalized into the same JSON tree shape before comparison (see [How XML is compared](#how-xml-is-compared) below), so the exact same diff engine and options apply to both formats.
 
 ## Getting started
 
@@ -55,7 +56,7 @@ dotnet test
 
 ## Using the app
 
-1. Browse to (or type the path of) a **left** and a **right** JSON file.
+1. Browse to (or type the path of) a **left** and a **right** config file — JSON and XML can be freely mixed.
 2. Adjust comparison options if needed:
    - **Array mode** — `Auto` (default), `Index`, or `Key`
    - **Case-sensitive keys** — whether object property names must match case exactly
@@ -75,6 +76,35 @@ Each difference is reported against a JSON-path-like location, rooted at `$`:
 | `$.meta.created`      | A nested property                                     |
 | `$.tags[2]`            | The 3rd element of the `tags` array (index-based)     |
 | `$.items[id=3]`        | The array element of `items` whose `id` is `3` (key-based) |
+
+## How XML is compared
+
+XML files (`web.config`, `applicationHost.config`, etc.) are converted into the same JSON-like tree the JSON comparer already understands, using these rules:
+
+- The root element becomes a single top-level property named after itself, e.g. `<configuration>` → `$.configuration`.
+- Attributes become properties prefixed with `@` — `<add key="Foo" value="Bar" />` → `{"@key": "Foo", "@value": "Bar"}`.
+- A leaf element with no attributes and no children becomes a plain string value.
+- Repeated sibling elements with the same tag name (e.g. multiple `<add>` entries under `<appSettings>`) become an array, matched by key just like a JSON array of objects — so the default array-key candidates include `@key`, `@name`, and `@id` alongside their unprefixed JSON equivalents.
+
+For example, comparing this `web.config` fragment:
+
+```xml
+<appSettings>
+  <add key="Environment" value="Staging" />
+  <add key="FeatureFlagX" value="false" />
+</appSettings>
+```
+
+against:
+
+```xml
+<appSettings>
+  <add key="Environment" value="Production" />
+  <add key="FeatureFlagY" value="true" />
+</appSettings>
+```
+
+correctly reports `Environment` as **Changed**, `FeatureFlagX` as **Removed**, and `FeatureFlagY` as **Added** — matched by the `key` attribute, not by position, so reordering `<add>` entries doesn't produce false differences.
 
 ## Publishing a standalone executable
 
