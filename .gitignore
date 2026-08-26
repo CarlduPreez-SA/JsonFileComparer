@@ -215,6 +215,9 @@ publish/
 # Note: Comment the next line if you want to checkin your web deploy settings,
 # but database connection strings (with potential passwords) will be unencrypted
 *.pubxml
+# These publish profiles are local build configuration only (RID/single-file flags),
+# not deployment secrets, so they're safe and useful to check in.
+!src/JsonFileComparer.App/Properties/PublishProfiles/*.pubxml
 *.publishproj
 
 # Microsoft Azure Web App publish settings. Comment the next line if you want to
