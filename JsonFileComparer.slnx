@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/JsonFileComparer.App/JsonFileComparer.App.csproj" />
+    <Project Path="src/JsonFileComparer.Core/JsonFileComparer.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/JsonFileComparer.Core.Tests/JsonFileComparer.Core.Tests.csproj" />
+  </Folder>
+</Solution>

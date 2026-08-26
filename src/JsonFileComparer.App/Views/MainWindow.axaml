@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:JsonFileComparer.App.ViewModels"
+        xmlns:conv="using:JsonFileComparer.App.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+        x:Class="JsonFileComparer.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="1100" Height="700"
+        Title="JSON File Comparer">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Window.Resources>
+        <conv:DiffTypeToBrushConverter x:Key="DiffTypeToBrushConverter" />
+    </Window.Resources>
+
+    <DockPanel Margin="12">
+
+        <!-- File selection -->
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto,20,Auto,*,Auto" RowDefinitions="Auto" Margin="0,0,0,8">
+            <TextBlock Grid.Column="0" Text="Left file:" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <TextBox Grid.Column="1" Text="{Binding LeftFilePath}" PlaceholderText="Path to left JSON file" />
+            <Button Grid.Column="2" Content="Browse..." Margin="6,0,0,0" Click="OnBrowseLeftClick" />
+
+            <TextBlock Grid.Column="4" Text="Right file:" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <TextBox Grid.Column="5" Text="{Binding RightFilePath}" PlaceholderText="Path to right JSON file" />
+            <Button Grid.Column="6" Content="Browse..." Margin="6,0,0,0" Click="OnBrowseRightClick" />
+        </Grid>
+
+        <!-- Options -->
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <TextBlock Text="Array mode:" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox ItemsSource="{Binding ArrayModes}" SelectedItem="{Binding SelectedArrayMode}" Width="110" Margin="0,0,16,0" />
+
+            <CheckBox Content="Case-sensitive keys" IsChecked="{Binding CaseSensitivePropertyNames}" Margin="0,0,16,0" />
+            <CheckBox Content="Treat null as missing" IsChecked="{Binding TreatNullAsMissing}" Margin="0,0,16,0" />
+            <CheckBox Content="Show unchanged" IsChecked="{Binding ShowUnchanged}" Margin="0,0,16,0" />
+
+            <TextBlock Text="Numeric tolerance:" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <NumericUpDown Value="{Binding NumericTolerance}" Increment="0.001" Minimum="0" Width="120" Margin="0,0,16,0" />
+
+            <Button Content="Compare" Command="{Binding CompareCommand}" FontWeight="Bold" />
+        </WrapPanel>
+
+        <!-- Status / summary / export -->
+        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,8,0,0">
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{Binding StatusMessage}" />
+                <TextBlock Text="{Binding SummaryText}" FontWeight="Bold" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="Export JSON..." Margin="0,0,8,0" Click="OnExportJsonClick" IsEnabled="{Binding HasResult}" />
+            <Button Grid.Column="2" Content="Export HTML..." Click="OnExportHtmlClick" IsEnabled="{Binding HasResult}" />
+        </Grid>
+
+        <!-- Diff grid -->
+        <DataGrid ItemsSource="{Binding DiffRows}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  GridLinesVisibility="All"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="2*" />
+                <DataGridTemplateColumn Header="Type" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:DiffRowViewModel">
+                            <TextBlock Text="{Binding Type}"
+                                       Foreground="{Binding DiffType, Converter={StaticResource DiffTypeToBrushConverter}}"
+                                       FontWeight="Bold" VerticalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Left value" Binding="{Binding LeftValue}" Width="2.5*" />
+                <DataGridTextColumn Header="Right value" Binding="{Binding RightValue}" Width="2.5*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+    </DockPanel>
+
+</Window>
